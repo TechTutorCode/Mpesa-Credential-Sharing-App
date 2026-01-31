@@ -356,7 +356,7 @@ async def mpesa_callback(request: Request, db: Session = Depends(get_db)):
         raise HTTPException(status_code=400, detail="Invalid callback structure")
     mid = callback_data.get("MerchantRequestID")
     cid = callback_data.get("CheckoutRequestID")
-    print(callback_data)
+    print("callback", callback_data)
     if not mid or not cid:
         raise HTTPException(status_code=400, detail="Missing MerchantRequestID or CheckoutRequestID")
     transaction = (
@@ -364,7 +364,7 @@ async def mpesa_callback(request: Request, db: Session = Depends(get_db)):
         .filter(StkPushTransaction.merchant_request_id == mid, StkPushTransaction.checkout_request_id == cid)
         .first()
     )
-    print(transaction)
+    print("transaction", transaction)
     if not transaction:
         raise HTTPException(status_code=404, detail="Transaction not found")
     transaction.status = "Done"
