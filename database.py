@@ -45,7 +45,7 @@ class Credential(Base):
 
 
 class StkPushTransaction(Base):
-    __tablename__ = "stk_push_transactions"
+    __tablename__ = "stk_push_transactionss"
 
     id = Column(Integer, primary_key=True, index=True)
     credential_id = Column(Integer, ForeignKey("credentials.id"), nullable=False, index=True)
