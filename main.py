@@ -349,8 +349,10 @@ def stk_push(
 
 @app.post("/callbackurl")
 async def mpesa_callback(request: Request, db: Session = Depends(get_db)):
+    print("callback has been hit")
     """STK Push callback. Credential resolved from MerchantRequestID+CheckoutRequestID -> StkPushTransaction."""
     raw = await request.json()
+    print("raw callback data", raw)
     callback_data = raw.get("Body", {}).get("stkCallback") or raw
     if not isinstance(callback_data, dict):
         raise HTTPException(status_code=400, detail="Invalid callback structure")
