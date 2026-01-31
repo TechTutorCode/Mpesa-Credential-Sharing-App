@@ -37,7 +37,7 @@ jobs:
           command: |
             sshpass -p "$SERVER_PASSWORD" ssh -o StrictHostKeyChecking=no root@37.60.242.201 bash -c "
               set -e
-              cd ~/apps/Billing-System-API
+              cd ~/apps/Mpesa-Credential-Sharing-App
 
               # Write environment variables
               echo 'DATABASE_URL=\"$DATABASE_URL\"' > .env
