@@ -44,6 +44,19 @@ class RegisterPaybillResponse(BaseModel):
         from_attributes = True
 
 
+class UpdatePaybillRequest(BaseModel):
+    """All fields optional for partial update."""
+    name: Optional[str] = Field(None, min_length=1, max_length=255)
+    consumer_key: Optional[str] = None
+    consumer_secret: Optional[str] = None
+    business_short_code: Optional[str] = None
+    passkey: Optional[str] = None
+    initiator_name: Optional[str] = None
+    security_credential: Optional[str] = None
+    environment: Optional[str] = None
+    is_active: Optional[bool] = None
+
+
 # --- STK Push (api_key in header, credential_id in body) ---
 
 class STKResponse(BaseModel):

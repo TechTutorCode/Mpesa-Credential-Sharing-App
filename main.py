@@ -32,6 +32,7 @@ from schema import (
     RegisterAppResponse,
     RegisterPaybillRequest,
     RegisterPaybillResponse,
+    UpdatePaybillRequest,
     STKPushPayload,
     RegisterUrlPayload,
 )
@@ -145,6 +146,67 @@ def register_paybill(
         environment=row.environment,
         created_at=row.created_at,
         updated_at=row.updated_at,
+    )
+
+
+@app.get("/paybills", response_model=List[RegisterPaybillResponse])
+def list_paybills(
+    db: Session = Depends(get_db),
+    app: App = Depends(get_app_from_header),
+):
+    """List all paybills for the app."""
+    rows = db.query(Credential).filter(Credential.app_id == app.id).all()
+    return [
+        RegisterPaybillResponse(
+            credential_id=r.credential_id,
+            name=r.name,
+            business_short_code=r.business_short_code,
+            environment=r.environment,
+            created_at=r.created_at,
+            updated_at=r.updated_at,
+        )
+        for r in rows
+    ]
+
+
+@app.get("/paybills/{credential_id}", response_model=RegisterPaybillResponse)
+def get_paybill(
+    credential_id: str,
+    db: Session = Depends(get_db),
+    app: App = Depends(get_app_from_header),
+):
+    """Get a single paybill by credential_id."""
+    cred = get_credential_for_app(app, credential_id, db)
+    return RegisterPaybillResponse(
+        credential_id=cred.credential_id,
+        name=cred.name,
+        business_short_code=cred.business_short_code,
+        environment=cred.environment,
+        created_at=cred.created_at,
+        updated_at=cred.updated_at,
+    )
+
+
+@app.patch("/paybills/{credential_id}", response_model=RegisterPaybillResponse)
+def update_paybill(
+    credential_id: str,
+    payload: UpdatePaybillRequest,
+    db: Session = Depends(get_db),
+    app: App = Depends(get_app_from_header),
+):
+    """Update an existing paybill. Only provided fields are updated."""
+    cred = get_credential_for_app(app, credential_id, db)
+    for key, value in payload.model_dump(exclude_unset=True).items():
+        setattr(cred, key, value)
+    db.commit()
+    db.refresh(cred)
+    return RegisterPaybillResponse(
+        credential_id=cred.credential_id,
+        name=cred.name,
+        business_short_code=cred.business_short_code,
+        environment=cred.environment,
+        created_at=cred.created_at,
+        updated_at=cred.updated_at,
     )
 
 

@@ -63,7 +63,10 @@ fetch("http://localhost:8000/stkpush", {
 | Method | Path | Auth | Body | Description |
 |--------|------|------|------|-------------|
 | POST | `/apps` | — | `{ "name": "..." }` | Register app. Returns `name`, `api_key`, `created_at`, `updated_at` |
+| GET | `/paybills` | X-API-Key | — | List all paybills for the app. |
+| GET | `/paybills/{credential_id}` | X-API-Key | — | Get a single paybill by credential_id. |
 | POST | `/paybills` | X-API-Key | name, consumer_key, consumer_secret, business_short_code, passkey, initiator_name, security_credential, environment | Register paybill under app. Returns `credential_id`, `name`, `business_short_code`, `environment`, `created_at`, `updated_at` |
+| PATCH | `/paybills/{credential_id}` | X-API-Key | name?, consumer_key?, consumer_secret?, business_short_code?, passkey?, initiator_name?, security_credential?, environment?, is_active? | Update paybill. Only provided fields are updated. |
 | POST | `/stkpush` | X-API-Key | `{ "credential_id", "phoneNumber", "accountNumber", "amount", "transactionDescription?" }` | Initiate STK push |
 | POST | `/mpesa/c2b/registerurl` | X-API-Key | `{ "credential_id", "ConfirmationURL?", "ValidationURL?" }` | Register C2B URLs for paybill |
 | GET | `/transactions/{account_reference}` | X-API-Key | — | Get C2B transactions. Optional `?credential_id=` to filter |
