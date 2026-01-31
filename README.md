@@ -1,0 +1,125 @@
+# M-Pesa Credential Sharing App
+
+Multi-tenant M-Pesa API proxy. Register apps, then register paybills under each app. All requests use **api_key** in the header; routes that need a specific paybill use **credential_id** in the body.
+
+## Authentication: How to attach the API key
+
+Include your `api_key` in **every request** (except `POST /apps` and callbacks) using one of these headers:
+
+| Header | Example |
+|--------|---------|
+| `X-API-Key` | `X-API-Key: a1b2c3d4e5f6...` |
+| `Authorization` | `Authorization: Bearer a1b2c3d4e5f6...` |
+
+**Swagger UI (interactive docs):**
+1. Open `http://localhost:8000/docs`
+2. Click the **Authorize** button (lock icon at the top right)
+3. Enter your `api_key` in the **X-API-Key** field
+4. Click **Authorize**, then **Close**
+5. All requests will now include the API key automatically
+
+**cURL example:**
+```bash
+curl -X POST "http://localhost:8000/stkpush" \
+  -H "X-API-Key: YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"credential_id": "...", "phoneNumber": "254712345678", "accountNumber": "ACC001", "amount": 100}'
+```
+
+**JavaScript (fetch) example:**
+```javascript
+fetch("http://localhost:8000/stkpush", {
+  method: "POST",
+  headers: {
+    "X-API-Key": "YOUR_API_KEY",
+    "Content-Type": "application/json"
+  },
+  body: JSON.stringify({
+    credential_id: "YOUR_CREDENTIAL_ID",
+    phoneNumber: "254712345678",
+    accountNumber: "ACC001",
+    amount: 100
+  })
+});
+```
+
+## Flow
+
+1. **Register app** → `POST /apps` with `{ "name": "My App" }` → returns `api_key` (auto-generated)
+2. **Register paybill** → `POST /paybills` with `X-API-Key` + paybill credentials → returns `credential_id` (auto-generated)
+3. **STK push, C2B register, etc.** → `X-API-Key` in header + `credential_id` in body (where applicable)
+
+## Setup
+
+1. Copy `.env.example` to `.env` and set `DATABASE_URL`, `APP_BASE_URL`
+2. Run: `pip install -r requirements.txt && uvicorn main:app --reload`
+
+**Note:** If upgrading from an older schema, delete `stk_push.db` or use a new `DATABASE_URL` so tables are created fresh.
+
+## Endpoints
+
+| Method | Path | Auth | Body | Description |
+|--------|------|------|------|-------------|
+| POST | `/apps` | — | `{ "name": "..." }` | Register app. Returns `name`, `api_key`, `created_at`, `updated_at` |
+| POST | `/paybills` | X-API-Key | name, consumer_key, consumer_secret, business_short_code, passkey, initiator_name, security_credential, environment | Register paybill under app. Returns `credential_id`, `name`, `business_short_code`, `environment`, `created_at`, `updated_at` |
+| POST | `/stkpush` | X-API-Key | `{ "credential_id", "phoneNumber", "accountNumber", "amount", "transactionDescription?" }` | Initiate STK push |
+| POST | `/mpesa/c2b/registerurl` | X-API-Key | `{ "credential_id", "ConfirmationURL?", "ValidationURL?" }` | Register C2B URLs for paybill |
+| GET | `/transactions/{account_reference}` | X-API-Key | — | Get C2B transactions. Optional `?credential_id=` to filter |
+| GET | `/all` | X-API-Key | — | Get all C2B transactions. Optional `?credential_id=` to filter |
+
+Callbacks (M-Pesa → your app, no auth): `/callbackurl`, `/validationurl`, `/confirmationurl`, `/resulturl`, `/timeouturl`
+
+## Examples
+
+### 1. Register app
+
+```bash
+curl -X POST "http://localhost:8000/apps" \
+  -H "Content-Type: application/json" \
+  -d '{"name": "Acme"}'
+```
+
+Response: `{ "name": "Acme", "api_key": "a1b2c3d4e5f6...", "created_at": "...", "updated_at": "..." }`
+
+### 2. Register paybill (use api_key from step 1)
+
+```bash
+curl -X POST "http://localhost:8000/paybills" \
+  -H "X-API-Key: YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Acme Paybill",
+    "consumer_key": "...",
+    "consumer_secret": "...",
+    "business_short_code": "174379",
+    "passkey": "...",
+    "initiator_name": "AcmeAPI",
+    "security_credential": "<from encryptpass.py>",
+    "environment": "sandbox"
+  }'
+```
+
+Response: `{ "credential_id": "abc123...", "name": "Acme Paybill", "business_short_code": "174379", "environment": "sandbox", "created_at": "...", "updated_at": "..." }`
+
+### 3. STK push (use api_key and credential_id)
+
+```bash
+curl -X POST "http://localhost:8000/stkpush" \
+  -H "X-API-Key: YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "credential_id": "YOUR_CREDENTIAL_ID",
+    "phoneNumber": "254712345678",
+    "accountNumber": "ACC001",
+    "amount": 100
+  }'
+```
+
+### 4. C2B register URL
+
+```bash
+curl -X POST "http://localhost:8000/mpesa/c2b/registerurl" \
+  -H "X-API-Key: YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"credential_id": "YOUR_CREDENTIAL_ID"}'
+```
