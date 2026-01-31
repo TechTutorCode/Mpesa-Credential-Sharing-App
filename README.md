@@ -54,7 +54,9 @@ fetch("http://localhost:8000/stkpush", {
 1. Copy `.env.example` to `.env` and set `DATABASE_URL`, `APP_BASE_URL`
 2. Run: `pip install -r requirements.txt && uvicorn main:app --reload`
 
-**Note:** If upgrading from an older schema, delete `stk_push.db` or use a new `DATABASE_URL` so tables are created fresh.
+**PostgreSQL:** Set `DATABASE_URL=postgresql://user:password@host:port/database`. Create the database first (e.g. `createdb mpesa_sharing`). Tables are created automatically on first run.
+
+**Note:** If upgrading from an older schema, use a new `DATABASE_URL` or drop/recreate the database so tables are created fresh.
 
 ## Endpoints
 
