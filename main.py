@@ -169,24 +169,6 @@ def list_paybills(
     ]
 
 
-@app.get("/paybills/{credential_id}", response_model=RegisterPaybillResponse)
-def get_paybill(
-    credential_id: str,
-    db: Session = Depends(get_db),
-    app: App = Depends(get_app_from_header),
-):
-    """Get a single paybill by credential_id."""
-    cred = get_credential_for_app(app, credential_id, db)
-    return RegisterPaybillResponse(
-        credential_id=cred.credential_id,
-        name=cred.name,
-        business_short_code=cred.business_short_code,
-        environment=cred.environment,
-        created_at=cred.created_at,
-        updated_at=cred.updated_at,
-    )
-
-
 @app.patch("/paybills/{credential_id}", response_model=RegisterPaybillResponse)
 def update_paybill(
     credential_id: str,
