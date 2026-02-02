@@ -12,7 +12,7 @@ logging.basicConfig(
     stream=sys.stdout,
 )
 
-from fastapi import FastAPI, HTTPException, Request, Depends, Body
+from fastapi import FastAPI, HTTPException, Request, Depends, Body, BackgroundTasks
 from fastapi.responses import JSONResponse
 from fastapi.security import APIKeyHeader
 from sqlalchemy import create_engine
@@ -26,7 +26,7 @@ from config import (
     CALLBACK_URL_RESULT,
     CALLBACK_URL_TIMEOUT,
 )
-from database import Base, App, Credential, StkPushTransaction, Transaction, generate_api_key, generate_credential_id
+from database import Base, App, Credential, StkPushTransaction, Transaction, generate_api_key, generate_credential_id, generate_account_number
 from schema import (
     RegisterAppRequest,
     RegisterAppResponse,
@@ -105,9 +105,10 @@ def value_error_handler(request, exc):
 
 @app.post("/apps", response_model=RegisterAppResponse)
 def register_app(payload: RegisterAppRequest, db: Session = Depends(get_db)):
-    """Register a new app. Returns name, api_key (auto-generated), created_at, updated_at."""
+    """Register a new app. Returns name, account_number (3-letter, unique), api_key, callback_url, created_at, updated_at."""
     api_key = generate_api_key()
-    row = App(name=payload.name, api_key=api_key)
+    account_number = generate_account_number(db)
+    row = App(name=payload.name, account_number=account_number, api_key=api_key, callback_url=payload.callback_url)
     db.add(row)
     db.commit()
     db.refresh(row)
@@ -417,8 +418,16 @@ async def validation_url(request: Request, db: Session = Depends(get_db)):
     return {"ResultCode": 0, "ResultDesc": "Accepted"}
 
 
+def _forward_to_app_callback(callback_url: str, body: dict) -> None:
+    """Forward Safaricom confirmation payload to app's callback_url. Runs in background."""
+    try:
+        requests.post(callback_url, json=body, timeout=30)
+    except Exception as e:
+        logger.warning("Failed to forward to app callback %s: %s", callback_url, e)
+
+
 @app.post("/confirmationurl", tags=["C2B"])
-async def confirmation_url(request: Request, db: Session = Depends(get_db)):
+async def confirmation_url(request: Request, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
     body = await request.json()
     shortcode = str(body.get("BusinessShortCode") or body.get("ShortCode") or "")
     cred = db.query(Credential).filter(Credential.business_short_code == shortcode).first()
@@ -443,6 +452,13 @@ async def confirmation_url(request: Request, db: Session = Depends(get_db)):
         query_transaction_status(cred, body.get("TransID", ""), CALLBACK_URL_RESULT, CALLBACK_URL_TIMEOUT)
     except Exception:
         pass
+    # Forward to app callback: first 3 chars of BillRefNumber = account_number
+    bill_ref = str(body.get("BillRefNumber", ""))
+    if len(bill_ref) >= 3:
+        account_number = bill_ref[:3].lower()
+        app = db.query(App).filter(App.account_number == account_number).first()
+        if app and app.callback_url:
+            background_tasks.add_task(_forward_to_app_callback, app.callback_url, body)
     return {"ResultCode": 0, "ResultDesc": "Accepted"}
 
 

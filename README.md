@@ -45,7 +45,7 @@ fetch("http://localhost:8000/stkpush", {
 
 ## Flow
 
-1. **Register app** → `POST /apps` with `{ "name": "My App" }` → returns `api_key` (auto-generated)
+1. **Register app** → `POST /apps` with `{ "name": "My App", "callback_url": "https://yourapp.com/mpesa/callback" }` → returns `account_number` (3-letter, unique), `api_key`, `callback_url`
 2. **Register paybill** → `POST /paybills` with `X-API-Key` + paybill credentials → returns `credential_id` (auto-generated)
 3. **STK push, C2B register, etc.** → `X-API-Key` in header + `credential_id` in body (where applicable)
 
@@ -62,7 +62,7 @@ fetch("http://localhost:8000/stkpush", {
 
 | Method | Path | Auth | Body | Description |
 |--------|------|------|------|-------------|
-| POST | `/apps` | — | `{ "name": "..." }` | Register app. Returns `name`, `api_key`, `created_at`, `updated_at` |
+| POST | `/apps` | — | `{ "name": "..." }` | Register app. Returns `name`, `account_number` (3-letter, unique), `api_key`, `created_at`, `updated_at` |
 | GET | `/paybills` | X-API-Key | — | List all paybills for the app. |
 | POST | `/paybills` | X-API-Key | name, consumer_key, consumer_secret, business_short_code, passkey, initiator_name, security_credential, environment | Register paybill under app. Returns `credential_id`, `name`, `business_short_code`, `environment`, `created_at`, `updated_at` |
 | PATCH | `/paybills/{credential_id}` | X-API-Key | name?, consumer_key?, consumer_secret?, business_short_code?, passkey?, initiator_name?, security_credential?, environment?, is_active? | Update paybill. Only provided fields are updated. |
@@ -80,10 +80,12 @@ Callbacks (M-Pesa → your app, no auth): `/callbackurl`, `/validationurl`, `/co
 ```bash
 curl -X POST "http://localhost:8000/apps" \
   -H "Content-Type: application/json" \
-  -d '{"name": "Acme"}'
+  -d '{"name": "Acme", "callback_url": "https://acme.com/mpesa/callback"}'
 ```
 
-Response: `{ "name": "Acme", "api_key": "a1b2c3d4e5f6...", "created_at": "...", "updated_at": "..." }`
+Response: `{ "name": "Acme", "account_number": "xyz", "api_key": "a1b2c3d4e5f6...", "callback_url": "https://acme.com/mpesa/callback", "created_at": "...", "updated_at": "..." }`
+
+**C2B forwarding:** When `/confirmationurl` receives a Safaricom confirmation, it forwards the full request to the app's `callback_url` if the first 3 letters of `BillRefNumber` match an app's `account_number`. Customers should use `{account_number}{reference}` (e.g. `xyz123`) as the account reference when paying.
 
 ### 2. Register paybill (use api_key from step 1)
 

@@ -1,3 +1,5 @@
+import random
+import string
 import uuid
 from sqlalchemy import Column, Integer, String, Float, DateTime, Boolean, ForeignKey, Text
 from sqlalchemy.ext.declarative import declarative_base
@@ -19,9 +21,22 @@ class App(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String(255), nullable=False)
+    account_number = Column(String(3), unique=True, nullable=False, index=True)
     api_key = Column(String(64), unique=True, nullable=False, index=True)
+    callback_url = Column(String(512), nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+
+def generate_account_number(db_session) -> str:
+    """Generate unique 3-letter account number (a-z). Retries on collision."""
+    max_retries = 100
+    for _ in range(max_retries):
+        code = "".join(random.choices(string.ascii_lowercase, k=3))
+        exists = db_session.query(App).filter(App.account_number == code).first()
+        if not exists:
+            return code
+    raise ValueError("Could not generate unique account number")
 
 
 class Credential(Base):

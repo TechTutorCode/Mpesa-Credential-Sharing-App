@@ -7,11 +7,14 @@ from datetime import datetime
 
 class RegisterAppRequest(BaseModel):
     name: str = Field(..., min_length=1, max_length=255)
+    callback_url: str = Field(..., min_length=1, max_length=512)
 
 
 class RegisterAppResponse(BaseModel):
     name: str
+    account_number: str
     api_key: str
+    callback_url: str | None
     created_at: datetime
     updated_at: datetime
 
