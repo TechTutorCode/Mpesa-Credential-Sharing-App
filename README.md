@@ -62,7 +62,8 @@ fetch("http://localhost:8000/stkpush", {
 
 | Method | Path | Auth | Body | Description |
 |--------|------|------|------|-------------|
-| POST | `/apps` | — | `{ "name": "..." }` | Register app. Returns `name`, `account_number` (3-letter, unique), `api_key`, `created_at`, `updated_at` |
+| POST | `/apps` | — | `{ "name": "...", "callback_url": "https://..." }` | Register app. Returns `name`, `account_number` (3-letter, unique), `api_key`, `callback_url`, `created_at`, `updated_at` |
+| PATCH | `/apps` | X-API-Key | `{ "name"?, "callback_url"? }` | Update the authenticated app. Only provided fields are updated. |
 | GET | `/paybills` | X-API-Key | — | List all paybills for the app. |
 | POST | `/paybills` | X-API-Key | name, consumer_key, consumer_secret, business_short_code, passkey, initiator_name, security_credential, environment | Register paybill under app. Returns `credential_id`, `name`, `business_short_code`, `environment`, `created_at`, `updated_at` |
 | PATCH | `/paybills/{credential_id}` | X-API-Key | name?, consumer_key?, consumer_secret?, business_short_code?, passkey?, initiator_name?, security_credential?, environment?, is_active? | Update paybill. Only provided fields are updated. |

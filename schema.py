@@ -22,6 +22,12 @@ class RegisterAppResponse(BaseModel):
         from_attributes = True
 
 
+class UpdateAppRequest(BaseModel):
+    """All fields optional for partial update."""
+    name: Optional[str] = Field(None, min_length=1, max_length=255)
+    callback_url: Optional[str] = Field(None, min_length=1, max_length=512)
+
+
 # --- Paybill registration (same as old MpesaCredentialCreate except no api_key) ---
 
 class RegisterPaybillRequest(BaseModel):

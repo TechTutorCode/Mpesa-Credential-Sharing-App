@@ -30,6 +30,7 @@ from database import Base, App, Credential, StkPushTransaction, Transaction, gen
 from schema import (
     RegisterAppRequest,
     RegisterAppResponse,
+    UpdateAppRequest,
     RegisterPaybillRequest,
     RegisterPaybillResponse,
     UpdatePaybillRequest,
@@ -113,6 +114,20 @@ def register_app(payload: RegisterAppRequest, db: Session = Depends(get_db)):
     db.commit()
     db.refresh(row)
     return row
+
+
+@app.patch("/apps", response_model=RegisterAppResponse)
+def update_app(
+    payload: UpdateAppRequest,
+    db: Session = Depends(get_db),
+    app: App = Depends(get_app_from_header),
+):
+    """Update the authenticated app. Only provided fields are updated."""
+    for key, value in payload.model_dump(exclude_unset=True).items():
+        setattr(app, key, value)
+    db.commit()
+    db.refresh(app)
+    return app
 
 
 # --- Paybill registration ---
