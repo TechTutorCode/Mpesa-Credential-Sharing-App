@@ -457,6 +457,7 @@ async def confirmation_url(request: Request, background_tasks: BackgroundTasks, 
             first_name=body.get("FirstName", ""),
             trans_time=str(body.get("TransTime", "")),
             account_reference=body.get("BillRefNumber", ""),
+            paybill_no=shortcode,
         )
         db.add(txn)
         db.commit()
@@ -535,6 +536,7 @@ def get_transactions_by_account_reference(
                 "phone_number": t.phone_number,
                 "trans_time": t.trans_time,
                 "full_name": t.full_name,
+                "paybill_no": t.paybill_no,
             }
             for t in rows
         ]
@@ -562,6 +564,7 @@ def get_transactions_all(
                 "phone_number": t.phone_number,
                 "trans_time": t.trans_time,
                 "full_name": t.full_name,
+                "paybill_no": t.paybill_no,
             }
             for t in rows
         ]

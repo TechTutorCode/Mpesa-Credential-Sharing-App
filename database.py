@@ -88,3 +88,4 @@ class Transaction(Base):
     phone_number = Column(String(32), nullable=True)
     trans_time = Column(String(32), nullable=False)
     full_name = Column(String(255), nullable=True)
+    paybill_no = Column(String(32), nullable=True)
